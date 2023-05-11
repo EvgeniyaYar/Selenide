@@ -1,63 +1,76 @@
-import com.codeborne.selenide.Condition;
-import com.codeborne.selenide.selector.ByText;
-import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.openqa.selenium.Keys;
 
 import java.time.Duration;
+import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
 
-import static com.codeborne.selenide.Condition.appear;
-import static com.codeborne.selenide.Condition.visible;
+import static com.codeborne.selenide.Condition.*;
 import static com.codeborne.selenide.Selectors.withText;
 import static com.codeborne.selenide.Selenide.*;
 
 public class CardDeliveryRequestTest {
-    @BeforeAll
-    static void setup() {
+    @BeforeEach
+     void setup() {
         open("http://localhost:9999/");
     }
+    public String generateDate(int days) {
+       return LocalDate.now().plusDays(days).format(DateTimeFormatter.ofPattern("dd.MM.yyyy"));
+    }
+
 
     @Test
     public void shouldSendRequestManual() {
+        String planningDate = generateDate(4);
         $("[data-test-id='city'] input.input__control").setValue("Владивосток");
+        $("[data-test-id='date'] input").sendKeys(Keys.chord(Keys.SHIFT, Keys.HOME), Keys.DELETE);
+        $("[data-test-id='date'] input").setValue(planningDate);
         $("[data-test-id='name'] .input__control").setValue("Петр Иванов");
         $("[data-test-id='phone'] .input__control").setValue("+77777777777");
         $("[data-test-id='agreement']").click();
         $("button.button_view_extra").click();
-        $("[data-test-id='notification'").should(appear, Duration.ofSeconds(15));
+        $("[data-test-id='notification'] .notification__content")
+                .should(appear, Duration.ofSeconds(15))
+                .shouldHave(text("Встреча успешно забронирована на " + planningDate), Duration.ofSeconds(15));
     }
 
     @Test
     public void shouldSendRequestAutocompleteCity() {
+        String planningDate = generateDate(4);
         $("[data-test-id='city'] input.input__control").setValue("Вл");
         $(withText("Владивосток")).click();
+        $("[data-test-id='city'] input").shouldHave(value("Владивосток"));
+        $("[data-test-id='date'] input").sendKeys(Keys.chord(Keys.SHIFT, Keys.HOME), Keys.DELETE);
+        $("[data-test-id='date'] input").setValue(planningDate);
         $("[data-test-id='name'] .input__control").setValue("Петр Иванов");
         $("[data-test-id='phone'] .input__control").setValue("+77777777777");
         $("[data-test-id='agreement']").click();
         $("button.button_view_extra").click();
         $("[data-test-id='notification'").should(appear, Duration.ofSeconds(15));
     }
+    @Test
+    public void shouldSendRequestAutocompleteDate() {
+        LocalDate planningDate = LocalDate.now().plusDays(150);
+        LocalDate currentDate = LocalDate.parse($("[data-test-id='date'] .input__control").getValue(),
+                DateTimeFormatter.ofPattern("dd.MM.yyyy"));
+        $("[data-test-id='city'] input.input__control").setValue("Владивосток");
+        while (currentDate.getMonthValue() != planningDate.getMonthValue()) {
+            if (currentDate.getMonthValue() < planningDate.getMonthValue()) {
+                $("[data-test-id='date'] .icon-button").click();
+                $("[data-step='1']").click();
+                $$(".calendar-input__calendar-wrapper").find(text(String.valueOf(planningDate.getDayOfMonth()))).click();
+            }
+                currentDate = LocalDate.parse($("[data-test-id='date'] .input__control").getValue(),
+                        DateTimeFormatter.ofPattern("dd.MM.yyyy"));
+        }
+        $("[data-test-id='name'] .input__control").setValue("Петр Иванов");
+        $("[data-test-id='phone'] .input__control").setValue("+77777777777");
+        $("[data-test-id='agreement']").click();
+        $("button.button_view_extra").click();
+        $("[data-test-id='notification'] .notification__content")
+                .should(appear, Duration.ofSeconds(15))
+                .shouldHave(text("Встреча успешно забронирована на " + planningDate.format(DateTimeFormatter.ofPattern("dd.MM.yyyy"))), Duration.ofSeconds(15));
 
-//    @Test
-//    public void shouldSendRequestAutocompleteDate() {
-//        $("[data-test-id='city'] input.input__control").setValue("Владивосток");
-//
-////       $("[data-test-id='date'] input.calendar-input__native-control").click();
-////        $("[data-test-id='date'] input.calendar-input__native-control").sendKeys(Keys.chord(Keys.DELETE));
-////        $("[data-test-id='date'] input.calendar-input__native-control").click();
-//        $("[data-test-id='date'] button.icon-button").click();
-//        $("[data-test-id='date'] input.calendar-input__native-control td[value='2023-05-18']").shouldBe(visible, Duration.ofSeconds(20));da//
-//        $("[data-test-id='date'] input.calendar-input__native-control td[value='2023-05-18']").click();
-////        $("[data-test-id='date'] input.input__control td[value='18.05.2023']").shouldBe(visible, Duration.ofSeconds(20));
-//
-////        $("[data-test-id='date'] .calendar-input__native-control").shouldBe(visible, Duration.ofSeconds(20));
-////      $("[data-test-id='date'] .calendar-input__native-control td[value='2023-05-18").click();
-//        $("[data-test-id='name'] .input__control").setValue("Петр Иванов");
-//        $("[data-test-id='phone'] .input__control").setValue("+77777777777");
-//        $("[data-test-id='agreement']").click();
-//        $("button.button_view_extra").click();
-//        $("[data-test-id='notification'").should(appear, Duration.ofSeconds(15));
-//    }
-
+    }
 }

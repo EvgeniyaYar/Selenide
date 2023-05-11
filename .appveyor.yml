@@ -1,6 +1,5 @@
 image: Ubuntu
 stack: jdk 11
-
 branches:
   only:
     - main
@@ -11,4 +10,4 @@ install:
   - java -jar ./artifacts/app-card-delivery.jar &
 
 build_script:
-  - ./gradlew test -Dselenide.headless=true
+  - ./gradlew test --info -Dselenide.headless=true --
