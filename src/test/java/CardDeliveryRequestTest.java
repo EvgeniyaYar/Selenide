@@ -1,3 +1,4 @@
+import com.codeborne.selenide.Configuration;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.openqa.selenium.Keys;
@@ -12,11 +13,13 @@ import static com.codeborne.selenide.Selenide.*;
 
 public class CardDeliveryRequestTest {
     @BeforeEach
-     void setup() {
+    void setup() {
+
         open("http://localhost:9999/");
     }
+
     public String generateDate(int days) {
-       return LocalDate.now().plusDays(days).format(DateTimeFormatter.ofPattern("dd.MM.yyyy"));
+        return LocalDate.now().plusDays(days).format(DateTimeFormatter.ofPattern("dd.MM.yyyy"));
     }
 
 
@@ -47,22 +50,29 @@ public class CardDeliveryRequestTest {
         $("[data-test-id='phone'] .input__control").setValue("+77777777777");
         $("[data-test-id='agreement']").click();
         $("button.button_view_extra").click();
-        $("[data-test-id='notification'").should(appear, Duration.ofSeconds(15));
+        $("[data-test-id='notification'")
+                .should(appear, Duration.ofSeconds(15))
+                .shouldHave(text("Встреча успешно забронирована на " + planningDate), Duration.ofSeconds(15));
+
     }
+
     @Test
     public void shouldSendRequestAutocompleteDate() {
-        LocalDate planningDate = LocalDate.now().plusDays(150);
+        LocalDate planningDate = LocalDate.now().plusDays(7);
         LocalDate currentDate = LocalDate.parse($("[data-test-id='date'] .input__control").getValue(),
                 DateTimeFormatter.ofPattern("dd.MM.yyyy"));
+        int dayOfMonth = planningDate.getDayOfMonth();
         $("[data-test-id='city'] input.input__control").setValue("Владивосток");
+        $("[data-test-id='date'] .icon-button").click();
+        $$("td.calendar__day").find(text(String.valueOf(dayOfMonth))).click();
         while (currentDate.getMonthValue() != planningDate.getMonthValue()) {
             if (currentDate.getMonthValue() < planningDate.getMonthValue()) {
                 $("[data-test-id='date'] .icon-button").click();
                 $("[data-step='1']").click();
-                $$(".calendar-input__calendar-wrapper").find(text(String.valueOf(planningDate.getDayOfMonth()))).click();
+                $$("td.calendar__day").find(text(String.valueOf(dayOfMonth))).click();
             }
-                currentDate = LocalDate.parse($("[data-test-id='date'] .input__control").getValue(),
-                        DateTimeFormatter.ofPattern("dd.MM.yyyy"));
+            currentDate = LocalDate.parse($("[data-test-id='date'] .input__control").getValue(),
+                    DateTimeFormatter.ofPattern("dd.MM.yyyy"));
         }
         $("[data-test-id='name'] .input__control").setValue("Петр Иванов");
         $("[data-test-id='phone'] .input__control").setValue("+77777777777");
@@ -71,6 +81,7 @@ public class CardDeliveryRequestTest {
         $("[data-test-id='notification'] .notification__content")
                 .should(appear, Duration.ofSeconds(15))
                 .shouldHave(text("Встреча успешно забронирована на " + planningDate.format(DateTimeFormatter.ofPattern("dd.MM.yyyy"))), Duration.ofSeconds(15));
-
     }
 }
+
+
